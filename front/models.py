@@ -154,13 +154,6 @@ class Manager(object):
 
     def get(self, id):
         instance = self.resource_cls()
-        if not callable(getattr(instance, 'read', None)):
-            raise AttributeError(
-                'Resource {resource_cls} is not readable; '
-                'Use {resource_cls}.objects.download() instead'.format(
-                    resource_cls=type(instance).__name__,
-                )
-            )
         instance.id = id
         instance.read()
         return instance
@@ -181,33 +174,17 @@ class Manager(object):
         fresh = self._search_cls(resource_cls=self.resource_cls)
         return fresh.all()
 
-    def download(self, id, local_file_path):
-        instance = self.resource_cls()
-        if not callable(getattr(instance, 'download', None)):
-            raise AttributeError(
-                'Resource {resource_cls} is not downloadable; '
-                'Use {resource_cls}.objects.get() instead'.format(
-                    resource_cls=type(instance).__name__,
-                )
-            )
-        instance.id = id
-        r = instance.download()
-        with open(local_file_path, 'wb') as fd:
-            for chunk in r.iter_content(128):
-                fd.write(chunk)
-
 
 class Attachment(Resource, mixins.Downloadable):
     class Meta:
-        detail_path = 'download/{id}/'
+        download_path = 'url'
 
     class Metadata(Schema):
         is_inline = fields.Boolean()
         cid = fields.Str()
 
-    objects = Manager()
-
     filename = fields.Str()
+    url = fields.Str()
     content_type = fields.Str()
     size = fields.Integer()
     metadata = fields.Nested(Metadata)

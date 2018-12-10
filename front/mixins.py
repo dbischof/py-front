@@ -25,11 +25,15 @@ class Creatable(object):
 
 
 class Downloadable(object):
-    def download(self):
-        path = self._get_path()
-        return client.get(path, download=True)
+    def download(self, local_file_path):
+        path = self._get_download_path()
+        r = client.get(path, raw_url=True, download=True)
+        with open(local_file_path, 'wb') as fd:
+            for chunk in r.iter_content(128):
+                fd.write(chunk)
 
-    def _get_path(self):
-        if getattr(self, 'id', None) is None:
-            raise ValueError('%s must be saved before it is read' % self)
-        return self.Meta.detail_path.format(id=self.id)
+    def _get_download_path(self):
+        download_path = getattr(self, self.Meta.download_path, None)
+        if download_path is None:
+            raise ValueError('%s must be saved before it is downloaded' % self)
+        return download_path
